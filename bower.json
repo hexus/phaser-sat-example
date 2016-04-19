@@ -1,0 +1,26 @@
+{
+	"name": "phaser-sat",
+	"authors": [
+		"Chris Andrew <chris@hexus.io>"
+	],
+	"description": "A experiment that uses sat-js with Phaser.",
+	"main": "",
+	"moduleType": [
+		"globals"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/hexus/phaser-sat-example",
+	"private": true,
+	"ignore": [
+		"**/.*",
+		"node_modules",
+		"bower_components",
+		"vendor",
+		"test",
+		"tests"
+	],
+	"dependencies": {
+		"phaser": "photonstorm/phaser#dev",
+		"sat-js": "jriecken/sat-js#0.5.0"
+	}
+}
