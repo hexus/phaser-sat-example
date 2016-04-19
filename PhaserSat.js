@@ -21,7 +21,10 @@ var PhaserSat = (function (Phaser, SAT) {
 		
 		create: function () {
 			// Boot the arcade physics engine
-			this.physics.startSystem(Phaser.Physics.Aracade);
+			this.physics.startSystem(Phaser.Physics.Arcade);
+			
+			// Set its gravity
+			this.physics.arcade.gravity.y = 1000;
 			
 			this.stage.backgroundColor = Phaser.Color.getRandomColor(210, 255);
 			
@@ -42,6 +45,9 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Make sure the player can't leave the bounds of the game world
 			this.player.body.collideWorldBounds = true;
 			
+			// And limit its Y velocity to limit the effects of gravity
+			this.player.body.maxVelocity.y = 500;
+			
 			// Define the player's SAT box
 			var playerBox = new Box(
 				new V(this.player.body.x, this.player.body.y),
@@ -55,12 +61,13 @@ var PhaserSat = (function (Phaser, SAT) {
 				polygon: playerBox.toPolygon()
 			};
 			
-			// Give our game state access to the WASD keys
-			this.cursors = game.input.keyboard.addKeys({
+			// Give our game state access to the desired control keys
+			this.controls = game.input.keyboard.addKeys({
 				'up': Phaser.KeyCode.W,
 				'down': Phaser.KeyCode.S,
 				'left': Phaser.KeyCode.A,
-				'right': Phaser.KeyCode.D
+				'right': Phaser.KeyCode.D,
+				'gravity': Phaser.KeyCode.G
 			});
 			
 			// Define a bunch of SAT polygons to render and collide against
@@ -113,31 +120,41 @@ var PhaserSat = (function (Phaser, SAT) {
 		},
 		
 		update: function () {
+			// Toggle gravity when we've just pressed G
+			if (this.controls.gravity.justDown) {
+				this.physics.arcade.gravity.y = !this.physics.arcade.gravity.y ? 1000 : 0;
+			}
+			
 			// Create a local variable as a shortcut for our player body
 			var body = this.player.body;
 			
-			// Reset its velocity
-			body.velocity.setTo(0, 0);
+			// Reset its X velocity
+			body.velocity.x = 0;
+			
+			// Reset its Y velocity if there's no gravity
+			if (!this.physics.arcade.gravity.y) {
+				body.velocity.y = 0;
+			}
 			
 			// Modify its velocity based on the keys currently pressed
-			if (this.cursors.up.isDown) {
+			if (this.controls.up.isDown) {
 				body.velocity.y = -200;
 			}
 			
-			if (this.cursors.down.isDown) {
+			if (this.controls.down.isDown) {
 				body.velocity.y = 200;
 			}
 			
-			if (this.cursors.left.isDown) {
+			if (this.controls.left.isDown) {
 				body.velocity.x = -200;
 			}
 			
-			if (this.cursors.right.isDown) {
+			if (this.controls.right.isDown) {
 				body.velocity.x = 200;
 			}
 			
 			/**
-			 * ~ Let's perform some collision detection with SAT! ~
+			 * And now, let's perform some collision detection with SAT!
 			 */
 			
 			// Update the player box position

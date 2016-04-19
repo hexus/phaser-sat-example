@@ -10,7 +10,7 @@ Install the bower dependencies.
 $ bower install
 ```
 
-Open up index.html in your browser!
+Open up `index.html` in your browser!
 
-Be warned, the Phaser dependency is bleeding edge. Change the version and run
-`bower install` again if you want something stable.
+Be warned, the Phaser dependency is bleeding edge (dev branch). Change the
+version and run `bower install` again if you want something stable.
