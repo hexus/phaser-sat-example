@@ -14,3 +14,7 @@ Open up `index.html` in your browser!
 
 Be warned, the Phaser dependency is bleeding edge (dev branch). Change the
 version and run `bower install` again if you want something stable.
+
+## Controls
+
+**WASD** to move around, **G** to toggle gravity.
