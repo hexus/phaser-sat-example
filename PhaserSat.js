@@ -8,18 +8,24 @@ var PhaserSat = (function (Phaser, SAT) {
 		// a rarity for Phaser states (as far as I've seen...)!
 	};
 	
-	// Shortcuts for some SAT classes, the same as demonstrated in its readme
-	var Box = SAT.Box;
-	var P = SAT.Polygon;
-	var V = SAT.Vector;
-	
 	PhaserSat.prototype = {
+		
+		features: {
+			bounce: false,
+			friction: false,
+			stopSliding: false
+		},
 		
 		preload: function () {
 			this.time.advancedTiming = true;
 		},
 		
 		create: function () {
+			// Shortcuts for some SAT classes
+			var Box = SAT.Box;
+			var P = SAT.Polygon;
+			var V = SAT.Vector;
+			
 			// Boot the arcade physics engine
 			this.physics.startSystem(Phaser.Physics.Arcade);
 			
@@ -67,7 +73,10 @@ var PhaserSat = (function (Phaser, SAT) {
 				'down': Phaser.KeyCode.S,
 				'left': Phaser.KeyCode.A,
 				'right': Phaser.KeyCode.D,
-				'gravity': Phaser.KeyCode.G
+				'bounce': Phaser.KeyCode.B,
+				'gravity': Phaser.KeyCode.G,
+				'sliding': Phaser.KeyCode.C,
+				'friction': Phaser.KeyCode.F,
 			});
 			
 			// Define a bunch of SAT polygons to render and collide against
