@@ -2,6 +2,14 @@
 
 An example of using Separating Axis Theorem collision handling with Phaser.
 
+**PhaserSat.js** is a heavily commented Phaser scene
+
+I put this together because I'm terrible at maths and wanted to learn how to
+perform collision detection and response against sloped tiles. Something like
+[this](http://www.metanetsoftware.com/technique/diagrams/tutA_demo.html) from
+a [fantastic tutorial](http://www.metanetsoftware.com/technique/tutorialA.html)
+from [Metanet](http://www.metanetsoftware.com/).
+
 ## Installation
 
 Install the bower dependencies.

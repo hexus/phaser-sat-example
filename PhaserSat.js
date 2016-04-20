@@ -9,7 +9,22 @@ var PhaserSat = (function (Phaser, SAT) {
 	
 	PhaserSat.prototype = {
 		
+		/**
+		 * Some debug data arrays.
+		 * 
+		 * @type {object<array>}
+		 */
+		debug: {
+			vectors: []
+		},
+		
+		/**
+		 * Some feature toggles.
+		 * 
+		 * @type {object}
+		 */
 		features: {
+			debug: true,
 			bounce: false,
 			friction: false,
 			stopSliding: false
@@ -50,7 +65,9 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Make sure the player can't leave the bounds of the game world
 			this.player.body.collideWorldBounds = true;
 			
-			// And limit its Y velocity to limit the effects of gravity
+			// Limit the effects of gravity and acceleration
+			this.player.body.drag.x = 1000;
+			this.player.body.maxVelocity.x = 1000;
 			this.player.body.maxVelocity.y = 500;
 			
 			// Define the player's SAT box
@@ -110,11 +127,10 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.polygons.push(new P(new V(500, 300), [
 				new V(50, 0), new V(150, 0), new V(200, 75), new V(150, 150),
 				new V(50, 150), new V(0, 75)
-				
-			]))
+			]));
 			
 			// Render the polygons so that we can see them!
-			for (var i in this.polygons) {
+			for (i in this.polygons) {
 				var polygon = this.polygons[i];
 				
 				var graphics = game.add.graphics(polygon.pos.x, polygon.pos.y);
@@ -136,15 +152,16 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Create a local variable as a shortcut for our player body
 			var body = this.player.body;
 			
-			// Reset its X velocity
-			body.velocity.x = 0;
+			// Reset its X accelleration
+			body.acceleration.x = 0;
 			
 			// Reset its Y velocity if there's no gravity
 			if (!this.physics.arcade.gravity.y) {
 				body.velocity.y = 0;
 			}
 			
-			// Modify its velocity based on the keys currently pressed
+			// Modify its accelleration or velocity based on the currently
+			// pressed keys
 			if (this.controls.up.isDown) {
 				body.velocity.y = -200;
 			}
@@ -154,11 +171,11 @@ var PhaserSat = (function (Phaser, SAT) {
 			}
 			
 			if (this.controls.left.isDown) {
-				body.velocity.x = -200;
+				body.acceleration.x = -1000;
 			}
 			
 			if (this.controls.right.isDown) {
-				body.velocity.x = 200;
+				body.acceleration.x = 1000;
 			}
 			
 			/**
@@ -182,16 +199,69 @@ var PhaserSat = (function (Phaser, SAT) {
 				// Our collision test responded positive, so let's resolve it
 				if (collision) {
 					// Here's our overlap vector
-					var overlap = response.overlapV;
+					var overlapV = response.overlapV.clone().scale(-1);
 					
 					// We can subtract it from the player's position to resolve
 					// the collision!
-					body.position.x -= overlap.x;
-					body.position.y -= overlap.y;
+					body.position.x += overlapV.x;
+					body.position.y += overlapV.y;
 					
 					// Let's update the SAT polygon too for any further polygons
-					body.sat.polygon.pos.x -= overlap.x;
-					body.sat.polygon.pos.y -= overlap.y;
+					body.sat.polygon.pos.x += overlapV.x;
+					body.sat.polygon.pos.y += overlapV.y;
+					
+					/**
+					 * And now, let's experiment with - goodness me - velocity!
+					 */
+					
+					var velocity = new SAT.V(body.velocity.x, body.velocity.y);
+					
+					// We need to flip our overlap normal, SAT gives it to us
+					// facing inwards to the collision
+					var overlapN = response.overlapN.clone().scale(-1);
+					
+					// Get the dot product of our velocity and overlap normal
+					var dotProduct = velocity.dot(overlapN);
+					
+					// If it's less than zero we're moving into the collision
+					if (dotProduct < 0) {
+						// Project our velocity onto the collision normal
+						var velocityN = velocity.clone().projectN(overlapN);
+						
+						// And from that, we can work out the surface velocity
+						var velocityT = velocity.clone().sub(velocityN);
+						
+						// Scale our normal velocity with a bounce coefficient (ziggity higgity hi! https://youtu.be/ViPQ-RIPmKk)
+						var bounce = velocityN.clone().scale(1 + 0.2);
+						
+						// And scale friction coefficient to the surface velocity
+						var friction = velocityT.clone().scale(0.01);
+						
+						// And finally add them together for our new velocity!
+						var newVelocity = velocity.clone().sub(bounce.clone().add(friction));
+						
+						body.velocity.x = newVelocity.x;
+						body.velocity.y = newVelocity.y;
+						
+						// If debugging is enabled, let's print the information
+						if (this.features.debug) {
+							this.debug.vectors = [];
+							
+							velocity.name    = 'velocity';
+							overlapV.name    = 'overlapV';
+							overlapN.name    = 'overlapN';
+							velocityN.name   = 'velocityN';
+							velocityT.name   = 'velocityT';
+							bounce.name      = 'bounce';
+							friction.name    = 'friction';
+							newVelocity.name = 'newVelocity';
+							
+							this.debug.vectors.push(
+								velocity, overlapN, velocityN, velocityT,
+								bounce, friction, newVelocity
+							);
+						}
+					}
 				}
 			}
 		},
@@ -199,8 +269,44 @@ var PhaserSat = (function (Phaser, SAT) {
 		render: function() {
 			// Render the current framerate
 			this.game.debug.text(this.time.fps || '--', 4, 16, '#777');
+			
+			// Render information about the player body
+			this.game.debug.bodyInfo(this.player, 32, 32, '#777');
+			
+			// Prepare to render some text lines
+			this.game.debug.start(32, 400, '#777');
+			this.game.debug.columnWidth = 100;
+			
+			// Keep a variable in case we get an overlap vector to draw
+			var line = null;
+			
+			// Render information about our vectors
+			for (var i in this.debug.vectors) {
+				var item = this.debug.vectors[i];
+				var name = item.hasOwnProperty('name') ? item.name : 'Vector ' + i;
+				
+				this.game.debug.line(name, ' x: ' + item.x.toFixed(4), ' y: ' + item.y.toFixed(4));
+				
+				if (name === 'overlapN') {
+					line = new Phaser.Line(
+						this.world.width / 2,
+						this.world.height / 2,
+						this.world.width / 2 + item.x * 100,
+						this.world.height / 2 + item.y * 100
+					);
+				}
+			}
+			
+			this.game.debug.stop();
+			
+			if (line) {
+				this.game.debug.geom(line, 'rgba(255,128,255,0.8)');
+			}
+			
+			// Clear the array for the next iteration
+			// this.debug.vectors = [];
 		}
-	}
+	};
 	
 	return PhaserSat;
 })(Phaser, SAT);
