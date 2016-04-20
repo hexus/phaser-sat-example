@@ -4,8 +4,7 @@ var PhaserSat = (function (Phaser, SAT) {
 	 * @constructor
 	 */
 	var PhaserSat = function () {
-		// We don't need to put anything here, private variables/methods are
-		// a rarity for Phaser states (as far as I've seen...)!
+		// We don't need anything in our Phaser state constructor
 	};
 	
 	PhaserSat.prototype = {
