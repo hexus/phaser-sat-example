@@ -10,7 +10,8 @@ var PhaserSat = (function (Phaser, SAT) {
 	PhaserSat.prototype = {
 		
 		/**
-		 * Some debug data arrays.
+		 * Some debug data arrays for use in the render() method, after being
+		 * populated in the update() method.
 		 * 
 		 * @type {object<array>}
 		 */
@@ -20,38 +21,51 @@ var PhaserSat = (function (Phaser, SAT) {
 		},
 		
 		/**
-		 * Some feature values.
+		 * Some values we can use throughout our game state.
 		 * 
 		 * @type {object}
 		 */
 		features: {
-			debug: true,
+			debug: 0,
+			speed: 1000,
 			bounce: 0.2,
+			gravity: 500,
 			friction: 0,
 			slowMotion: 1,
 			stopSliding: false
 		},
 		
+		/**
+		 * Preload any data needed for the game state.
+		 * 
+		 * @method PhaserSat#preload
+		 */
 		preload: function () {
-			
+			// Nothing to load here! We're just using geometry.
 		},
 		
+		/**
+		 * Prepare the game state.
+		 *
+		 * Here we create everything we want to mess around with in our update
+		 * loop.
+		 * 
+		 * @method PhaserSat#create
+		 */
 		create: function () {
 			// Shortcuts for some SAT classes
 			var Box = SAT.Box;
 			var P = SAT.Polygon;
 			var V = SAT.Vector;
 			
-			// Set up some advance timing and set the slow motion value
+			// Enabled Phaser's advance timing and set the slow motion value
 			this.time.advancedTiming = true;
 			this.time.slowMotion = this.features.slowMotion;
 			
 			// Boot the arcade physics engine
 			this.physics.startSystem(Phaser.Physics.Arcade);
 			
-			// Set its gravity
-			this.physics.arcade.gravity.y = 500;
-			
+			// Set a random, pale background colour
 			this.stage.backgroundColor = Phaser.Color.getRandomColor(210, 255);
 			
 			// Create a graphics object to represent our player, in this case
@@ -72,9 +86,10 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.player.body.collideWorldBounds = true;
 			
 			// Limit the effects of gravity and acceleration
-			this.player.body.drag.x = 1000;
-			this.player.body.maxVelocity.x = 1000;
-			this.player.body.maxVelocity.y = 500;
+			this.player.body.drag.x = this.features.speed;
+			this.player.body.drag.y = this.features.speed;
+			this.player.body.maxVelocity.x = this.features.speed;
+			this.player.body.maxVelocity.y = this.features.speed;
 			
 			// Define the player's SAT box
 			var playerBox = new Box(
@@ -149,18 +164,26 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.game.debug.renderShadow = false;
 		},
 		
+		/**
+		 * Update the game state.
+		 * 
+		 * @method PhaserSat#update
+		 */
 		update: function () {
-			// Toggle gravity when we've just pressed G
-			if (this.controls.gravity.justDown) {
-				this.physics.arcade.gravity.y = !this.physics.arcade.gravity.y ? 1000 : 0;
-			}
-			
 			// Create a local variable as a shortcut for our player body
 			var body = this.player.body;
 			
-			/**
-			 * And now, let's perform some collision detection with SAT!
-			 */
+			// And the Arcade Physics gravity setting
+			var gravity = this.physics.arcade.gravity;
+			
+			// And our keyboard controls
+			var controls = this.controls;
+			
+			/**                                                       **\
+			 * ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ *
+			 * First, let's perform some collision detection with SAT! *
+			 * ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ *
+			\*                                                         */
 			
 			// Update the player box position
 			body.sat.polygon.pos.x = body.x; // SAT allows us to set polygon
@@ -178,11 +201,12 @@ var PhaserSat = (function (Phaser, SAT) {
 				
 				// Our collision test responded positive, so let's resolve it
 				if (collision) {
-					// Here's our overlap vector
+					// Here's our overlap vector - let's invert it so it faces
+					// out of the collision surface
 					var overlapV = response.overlapV.clone().scale(-1);
 					
-					// We can subtract it from the player's position to resolve
-					// the collision!
+					// Then add it to the player's position to resolve the
+					// collision!
 					body.position.x += overlapV.x;
 					body.position.y += overlapV.y;
 					
@@ -197,95 +221,104 @@ var PhaserSat = (function (Phaser, SAT) {
 					var velocity = new SAT.V(body.velocity.x, body.velocity.y);
 					
 					// We need to flip our overlap normal, SAT gives it to us
-					// facing inwards to the collision
+					// facing inwards to the collision and we need it facing out
 					var overlapN = response.overlapN.clone().scale(-1);
 					
-					// Get the dot product of our velocity and overlap normal
-					var dotProduct = velocity.dot(overlapN);
+					// Project our velocity onto the overlap normal
+					var velocityN = velocity.clone().projectN(overlapN);
 					
-					// If it's less than zero we're moving into the collision
-					//if (dotProduct <= 0) {
-						// Project our velocity onto the overlap normal
-						var velocityN = velocity.clone().projectN(overlapN);
+					// Then work out the surface velocity
+					var velocityT = velocity.clone().sub(velocityN);
+					
+					// Scale our normal velocity with a bounce coefficient (ziggity biggity hi! https://youtu.be/ViPQ-RIPmKk)
+					var bounce = velocityN.clone().scale(-this.features.bounce);
+					
+					// And scale a friction coefficient to the surface velocity
+					var friction = velocityT.clone().scale(1 - this.features.friction);
+					
+					// And finally add them together for our new velocity!
+					var newVelocity = friction.clone().add(bounce);
+					
+					// Set the new velocity on our physics body
+					body.velocity.x = newVelocity.x;
+					body.velocity.y = newVelocity.y;
+					
+					// If debugging is enabled, let's print some information
+					if (this.features.debug) {
+						velocity.name    = 'velocity';
+						overlapV.name    = 'overlapV';
+						overlapN.name    = 'overlapN';
+						velocityN.name   = 'velocityN';
+						velocityT.name   = 'velocityT';
+						bounce.name      = 'bounce';
+						friction.name    = 'friction';
+						newVelocity.name = 'newVelocity';
 						
-						// Then work out the surface velocity
-						var velocityT = velocity.clone().sub(velocityN);
+						this.debug.vectors.push(
+							velocity, overlapN, velocityN, velocityT,
+							bounce, friction, newVelocity
+						);
 						
-						// Here we tinker with static friction
-						//var frictionCoefficient = this.features.friction;
-						//if (velocityT.len < 0.01)
-						//	frictionCoefficient = 0;
-						
-						// Scale our normal velocity with a bounce coefficient (ziggity biggity hi! https://youtu.be/ViPQ-RIPmKk)
-						var bounce = velocityN.clone().scale(-this.features.bounce);
-						
-						// And scale a friction coefficient to the surface velocity
-						var friction = velocityT.clone().scale(1 - this.features.friction);
-						
-						// And finally add them together for our new velocity!
-						var newVelocity = friction.clone().add(bounce);
-						
-						// Set the new velocity on our physics body
-						body.velocity.x = newVelocity.x;
-						body.velocity.y = newVelocity.y;
-						
-						// If debugging is enabled, let's print the information
-						if (this.features.debug) {
-							this.debug.vectors = [];
-							this.debug.normals = [];
-							
-							velocity.name    = 'velocity';
-							overlapV.name    = 'overlapV';
-							overlapN.name    = 'overlapN';
-							velocityN.name   = 'velocityN';
-							velocityT.name   = 'velocityT';
-							bounce.name      = 'bounce';
-							friction.name    = 'friction';
-							newVelocity.name = 'newVelocity';
-							
-							this.debug.vectors.push(
-								velocity, overlapN, velocityN, velocityT,
-								bounce, friction, newVelocity
-							);
-							
+						// If detailed debugging is enabled, let's print the
+						// vectors as lines on the screen!
+						if (this.features.debug > 1) {
 							overlapN.colour = '#333';
 							bounce.colour   = '#25f';
 							friction.colour = '#f55';
 							newVelocity.colour = '#5f5';
 							
-							// TODO: Set some colours
 							this.debug.normals.push(
 								overlapN, bounce, friction, newVelocity
 							);
 						}
-					//}
+					}
 				}
 			}
 			
-			// Reset its X accelleration
-			body.acceleration.x = 0;
+			/**
+			 * Now that the physics is out of the way, we can apply velocity
+			 * to our player by using acceleration.
+			 */
 			
-			// Reset its Y velocity if there's no gravity
-			if (!this.physics.arcade.gravity.y) {
-				body.velocity.y = 0;
+			 // Toggle gravity (and player drag on the Y axis) when we've just
+ 			// pressed down the G key
+ 			if (controls.gravity.justDown) {
+ 				if (!gravity.y) {
+					// We don't want any drag on the Y axis when gravity is on
+ 					gravity.y = this.features.gravity;
+ 					body.drag.y = 0;
+ 				} else {
+					// But we do want it when gravity is off!
+ 					gravity.y = 0;
+ 					body.drag.y = this.features.speed;
+ 				}
+ 			}
+			
+			// Reset the player body's acceleration
+			if (!(controls.left.isDown || controls.right.isDown)) {
+				body.acceleration.x = 0;
 			}
 			
-			// Modify its accelleration or velocity based on the currently
-			// pressed keys
-			if (this.controls.up.isDown) {
-				body.velocity.y = -200;
+			if (!(controls.up.isDown || controls.down.isDown)) {
+				body.acceleration.y = 0;
 			}
 			
-			if (this.controls.down.isDown) {
-				body.velocity.y = 200;
+			// Modify the player body's acceleration or velocity based on the
+			// currently pressed keys and speed value
+			if (controls.up.isDown) {
+				body.acceleration.y = -this.features.speed;
 			}
 			
-			if (this.controls.left.isDown) {
-				body.acceleration.x = -1000;
+			if (controls.down.isDown) {
+				body.acceleration.y = this.features.speed;
 			}
 			
-			if (this.controls.right.isDown) {
-				body.acceleration.x = 1000;
+			if (controls.left.isDown) {
+				body.acceleration.x = -this.features.speed;
+			}
+			
+			if (controls.right.isDown) {
+				body.acceleration.x = this.features.speed;
 			}
 		},
 		
@@ -294,8 +327,9 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.game.debug.text(this.time.fps || '--', 4, 16, '#777');
 			
 			// Bail out here if debugging is disabled
-			if (!this.features.debug)
+			if (this.features.debug < 1) {
 				return;
+			}
 			
 			// Render information about the player body
 			this.game.debug.bodyInfo(this.player, 32, 32, '#777');
@@ -314,25 +348,47 @@ var PhaserSat = (function (Phaser, SAT) {
 			
 			this.game.debug.stop();
 			
-			for (i in this.debug.normals) {
-				var item = this.debug.normals[i];
-				
-				// Draw the normal from the center of the world
-				var line = new Phaser.Line(
-					this.world.width / 2,
-					this.world.height / 2,
-					this.world.width / 2 + Math.min(item.x * 10, 100),
-					this.world.height / 2 + Math.min(item.y * 10, 100)
-				);
-				
-				var colour = item.hasOwnProperty('colour') ? item.colour : 'rgba(255,128,255,0.8)';
-				
-				this.game.debug.geom(line, colour);
+			if (this.features.debug > 1) {
+				for (i in this.debug.normals) {
+					var item = this.debug.normals[i];
+					
+					// Draw the normal from the center of the world
+					var line = new Phaser.Line(
+						this.world.width / 2,
+						this.world.height / 2,
+						this.world.width / 2 + item.x,
+						this.world.height / 2 + item.y
+					);
+					
+					var colour = item.hasOwnProperty('colour') ? item.colour : 'rgba(255,128,255,0.8)';
+					
+					this.game.debug.geom(line, colour);
+				}
 			}
 			
 			// Clear the array for the next iteration
-			// this.debug.vectors = [];
+			this.debug.vectors = [];
+			this.debug.normals = [];
 		}
+	};
+	
+	/**
+	 * @type {function}
+	 */
+	Phaser.Physics.Arcade.Body.originalRenderBodyInfo = Phaser.Physics.Arcade.Body.renderBodyInfo;
+	
+	/**
+	 * Adding a another line to Arcade Body's static renderBodyInfo() method,
+	 * just so we can see a little more (i.e. drag).
+	 *
+	 * @static
+	 * @method Phaser.Physics.Arcade.Body.renderBodyInfo
+	 * @param  {Phaser.Debug}               debug
+	 * @param  {Phaser.Physics.Arcade.Body} body
+	 */
+	Phaser.Physics.Arcade.Body.renderBodyInfo = function (debug, body) {
+		Phaser.Physics.Arcade.Body.originalRenderBodyInfo.apply(this, arguments);
+		debug.line('drag x: ' + body.drag.x, 'y: ' + body.drag.y);
 	};
 	
 	return PhaserSat;
