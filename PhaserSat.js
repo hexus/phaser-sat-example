@@ -15,7 +15,8 @@ var PhaserSat = (function (Phaser, SAT) {
 		 * @type {object<array>}
 		 */
 		debug: {
-			vectors: []
+			vectors: [],
+			normals: []
 		},
 		
 		/**
@@ -25,7 +26,7 @@ var PhaserSat = (function (Phaser, SAT) {
 		 */
 		features: {
 			debug: true,
-			bounce: 0.3,
+			bounce: 0,
 			friction: 0,
 			stopSliding: false
 		},
@@ -44,7 +45,7 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.physics.startSystem(Phaser.Physics.Arcade);
 			
 			// Set its gravity
-			this.physics.arcade.gravity.y = 1000;
+			this.physics.arcade.gravity.y = 500;
 			
 			this.stage.backgroundColor = Phaser.Color.getRandomColor(210, 255);
 			
@@ -152,32 +153,6 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Create a local variable as a shortcut for our player body
 			var body = this.player.body;
 			
-			// Reset its X accelleration
-			body.acceleration.x = 0;
-			
-			// Reset its Y velocity if there's no gravity
-			if (!this.physics.arcade.gravity.y) {
-				body.velocity.y = 0;
-			}
-			
-			// Modify its accelleration or velocity based on the currently
-			// pressed keys
-			if (this.controls.up.isDown) {
-				body.velocity.y = -200;
-			}
-			
-			if (this.controls.down.isDown) {
-				body.velocity.y = 200;
-			}
-			
-			if (this.controls.left.isDown) {
-				body.acceleration.x = -1000;
-			}
-			
-			if (this.controls.right.isDown) {
-				body.acceleration.x = 1000;
-			}
-			
 			/**
 			 * And now, let's perform some collision detection with SAT!
 			 */
@@ -224,7 +199,7 @@ var PhaserSat = (function (Phaser, SAT) {
 					var dotProduct = velocity.dot(overlapN);
 					
 					// If it's less than zero we're moving into the collision
-					if (dotProduct < 0) {
+					if (dotProduct <= 0) {
 						// Project our velocity onto the collision normal
 						var velocityN = velocity.clone().projectN(overlapN);
 						
@@ -240,19 +215,19 @@ var PhaserSat = (function (Phaser, SAT) {
 						var bounce = velocityN.clone().scale(1 + this.features.bounce);
 						
 						// And scale a friction coefficient to the surface velocity
-						var friction = velocityT.clone().scale(this.features.friction); // Shouldn't it be 1 - friction?
+						var friction = velocityT.clone().scale(1 - this.features.friction);
 						
 						// And finally add them together for our new velocity!
-						var newVelocity = velocity.clone().sub( // Hmm... sub() is not quite right? Try going up a slope while on a slope...
-							friction.clone().add(bounce)
-						);
+						var newVelocity = friction.clone().add(bounce);
 						
+						// Set the new velocity on our physics body
 						body.velocity.x = newVelocity.x;
 						body.velocity.y = newVelocity.y;
 						
 						// If debugging is enabled, let's print the information
 						if (this.features.debug) {
 							this.debug.vectors = [];
+							this.debug.normals = [];
 							
 							velocity.name    = 'velocity';
 							overlapV.name    = 'overlapV';
@@ -267,9 +242,40 @@ var PhaserSat = (function (Phaser, SAT) {
 								velocity, overlapN, velocityN, velocityT,
 								bounce, friction, newVelocity
 							);
+							
+							// TODO: Set some colours
+							this.debug.normals.push(
+								overlapN, bounce, friction, newVelocity
+							)
 						}
 					}
 				}
+			}
+			
+			// Reset its X accelleration
+			body.acceleration.x = 0;
+			
+			// Reset its Y velocity if there's no gravity
+			if (!this.physics.arcade.gravity.y) {
+				body.velocity.y = 0;
+			}
+			
+			// Modify its accelleration or velocity based on the currently
+			// pressed keys
+			if (this.controls.up.isDown) {
+				body.velocity.y = -200;
+			}
+			
+			if (this.controls.down.isDown) {
+				body.velocity.y = 200;
+			}
+			
+			if (this.controls.left.isDown) {
+				body.acceleration.x = -1000;
+			}
+			
+			if (this.controls.right.isDown) {
+				body.acceleration.x = 1000;
 			}
 		},
 		
@@ -288,29 +294,27 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.game.debug.start(32, 400, '#777');
 			this.game.debug.columnWidth = 100;
 			
-			// Keep a variable in case we get an overlap vector to draw
-			var line = null;
-			
 			// Render information about our vectors
 			for (var i in this.debug.vectors) {
 				var item = this.debug.vectors[i];
 				var name = item.hasOwnProperty('name') ? item.name : 'Vector ' + i;
 				
 				this.game.debug.line(name, ' x: ' + item.x.toFixed(4), ' y: ' + item.y.toFixed(4));
-				
-				if (name === 'overlapN') {
-					line = new Phaser.Line(
-						this.world.width / 2,
-						this.world.height / 2,
-						this.world.width / 2 + item.x * 100,
-						this.world.height / 2 + item.y * 100
-					);
-				}
 			}
 			
 			this.game.debug.stop();
 			
-			if (line) {
+			for (var i in this.debug.normals) {
+				var item = this.debug.normals[i];
+				
+				// Draw the normal from the center of the world
+				var line = new Phaser.Line(
+					this.world.width / 2,
+					this.world.height / 2,
+					this.world.width / 2 + item.x * 100,
+					this.world.height / 2 + item.y * 100
+				);
+				
 				this.game.debug.geom(line, 'rgba(255,128,255,0.8)');
 			}
 			
