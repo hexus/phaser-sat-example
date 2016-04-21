@@ -26,7 +26,7 @@ var PhaserSat = (function (Phaser, SAT) {
 		 */
 		features: {
 			debug: true,
-			bounce: 0,
+			bounce: 0.1,
 			friction: 0,
 			stopSliding: false
 		},
@@ -200,11 +200,11 @@ var PhaserSat = (function (Phaser, SAT) {
 					
 					// If it's less than zero we're moving into the collision
 					if (dotProduct <= 0) {
-						// Project our velocity onto the collision normal
+						// Project our velocity onto the overlap normal
 						var velocityN = velocity.clone().projectN(overlapN);
 						
-						// And from that, we can work out the surface velocity
-						var velocityT = velocity.clone().sub(velocityN);
+						// Then work out the surface velocity
+						var velocityT = velocity.clone().sub(overlapN);
 						
 						// Here we tinker with static friction
 						//var frictionCoefficient = this.features.friction;
@@ -311,8 +311,8 @@ var PhaserSat = (function (Phaser, SAT) {
 				var line = new Phaser.Line(
 					this.world.width / 2,
 					this.world.height / 2,
-					this.world.width / 2 + item.x * 100,
-					this.world.height / 2 + item.y * 100
+					this.world.width / 2 + Math.min(item.x * 10, 100),
+					this.world.height / 2 + Math.min(item.y * 10, 100)
 				);
 				
 				this.game.debug.geom(line, 'rgba(255,128,255,0.8)');
