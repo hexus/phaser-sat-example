@@ -19,14 +19,14 @@ var PhaserSat = (function (Phaser, SAT) {
 		},
 		
 		/**
-		 * Some feature toggles.
+		 * Some feature values.
 		 * 
 		 * @type {object}
 		 */
 		features: {
 			debug: true,
-			bounce: false,
-			friction: false,
+			bounce: 0.3,
+			friction: 0,
 			stopSliding: false
 		},
 		
@@ -231,14 +231,21 @@ var PhaserSat = (function (Phaser, SAT) {
 						// And from that, we can work out the surface velocity
 						var velocityT = velocity.clone().sub(velocityN);
 						
-						// Scale our normal velocity with a bounce coefficient (ziggity higgity hi! https://youtu.be/ViPQ-RIPmKk)
-						var bounce = velocityN.clone().scale(1 + 0.2);
+						// Here we tinker with static friction
+						//var frictionCoefficient = this.features.friction;
+						//if (velocityT.len < 0.01)
+						//	frictionCoefficient = 0;
 						
-						// And scale friction coefficient to the surface velocity
-						var friction = velocityT.clone().scale(0.01);
+						// Scale our normal velocity with a bounce coefficient (ziggity higgity hi! https://youtu.be/ViPQ-RIPmKk)
+						var bounce = velocityN.clone().scale(1 + this.features.bounce);
+						
+						// And scale a friction coefficient to the surface velocity
+						var friction = velocityT.clone().scale(this.features.friction); // Shouldn't it be 1 - friction?
 						
 						// And finally add them together for our new velocity!
-						var newVelocity = velocity.clone().sub(bounce.clone().add(friction));
+						var newVelocity = velocity.clone().sub( // Hmm... sub() is not quite right? Try going up a slope while on a slope...
+							friction.clone().add(bounce)
+						);
 						
 						body.velocity.x = newVelocity.x;
 						body.velocity.y = newVelocity.y;
@@ -269,6 +276,10 @@ var PhaserSat = (function (Phaser, SAT) {
 		render: function() {
 			// Render the current framerate
 			this.game.debug.text(this.time.fps || '--', 4, 16, '#777');
+			
+			// Bail out here if debugging is disabled
+			if (!this.features.debug)
+				return;
 			
 			// Render information about the player body
 			this.game.debug.bodyInfo(this.player, 32, 32, '#777');
