@@ -26,13 +26,14 @@ var PhaserSat = (function (Phaser, SAT) {
 		 */
 		features: {
 			debug: true,
-			bounce: 0.1,
+			bounce: 0.2,
 			friction: 0,
+			slowMotion: 1,
 			stopSliding: false
 		},
 		
 		preload: function () {
-			this.time.advancedTiming = true;
+			
 		},
 		
 		create: function () {
@@ -40,6 +41,10 @@ var PhaserSat = (function (Phaser, SAT) {
 			var Box = SAT.Box;
 			var P = SAT.Polygon;
 			var V = SAT.Vector;
+			
+			// Set up some advance timing and set the slow motion value
+			this.time.advancedTiming = true;
+			this.time.slowMotion = this.features.slowMotion;
 			
 			// Boot the arcade physics engine
 			this.physics.startSystem(Phaser.Physics.Arcade);
@@ -199,20 +204,20 @@ var PhaserSat = (function (Phaser, SAT) {
 					var dotProduct = velocity.dot(overlapN);
 					
 					// If it's less than zero we're moving into the collision
-					if (dotProduct <= 0) {
+					//if (dotProduct <= 0) {
 						// Project our velocity onto the overlap normal
 						var velocityN = velocity.clone().projectN(overlapN);
 						
 						// Then work out the surface velocity
-						var velocityT = velocity.clone().sub(overlapN);
+						var velocityT = velocity.clone().sub(velocityN);
 						
 						// Here we tinker with static friction
 						//var frictionCoefficient = this.features.friction;
 						//if (velocityT.len < 0.01)
 						//	frictionCoefficient = 0;
 						
-						// Scale our normal velocity with a bounce coefficient (ziggity higgity hi! https://youtu.be/ViPQ-RIPmKk)
-						var bounce = velocityN.clone().scale(1 + this.features.bounce);
+						// Scale our normal velocity with a bounce coefficient (ziggity biggity hi! https://youtu.be/ViPQ-RIPmKk)
+						var bounce = velocityN.clone().scale(-this.features.bounce);
 						
 						// And scale a friction coefficient to the surface velocity
 						var friction = velocityT.clone().scale(1 - this.features.friction);
@@ -243,12 +248,17 @@ var PhaserSat = (function (Phaser, SAT) {
 								bounce, friction, newVelocity
 							);
 							
+							overlapN.colour = '#333';
+							bounce.colour   = '#25f';
+							friction.colour = '#f55';
+							newVelocity.colour = '#5f5';
+							
 							// TODO: Set some colours
 							this.debug.normals.push(
 								overlapN, bounce, friction, newVelocity
-							)
+							);
 						}
-					}
+					//}
 				}
 			}
 			
@@ -304,7 +314,7 @@ var PhaserSat = (function (Phaser, SAT) {
 			
 			this.game.debug.stop();
 			
-			for (var i in this.debug.normals) {
+			for (i in this.debug.normals) {
 				var item = this.debug.normals[i];
 				
 				// Draw the normal from the center of the world
@@ -315,7 +325,9 @@ var PhaserSat = (function (Phaser, SAT) {
 					this.world.height / 2 + Math.min(item.y * 10, 100)
 				);
 				
-				this.game.debug.geom(line, 'rgba(255,128,255,0.8)');
+				var colour = item.hasOwnProperty('colour') ? item.colour : 'rgba(255,128,255,0.8)';
+				
+				this.game.debug.geom(line, colour);
 			}
 			
 			// Clear the array for the next iteration
