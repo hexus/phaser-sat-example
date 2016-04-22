@@ -1,17 +1,19 @@
 var PhaserSat = (function (Phaser, SAT) {
 	
 	/**
+	 * Instantiate a new PhaserSat Phaser state.
+	 * 
 	 * @constructor
 	 */
 	var PhaserSat = function () {
-		// We don't need anything in our Phaser state constructor
+		// We don't need anything in the constructor for this Phaser state.
 	};
 	
 	PhaserSat.prototype = {
 		
 		/**
-		 * Some debug data arrays for use in the render() method, after being
-		 * populated in the update() method.
+		 * Some data populated by the update() method for use in the render()
+		 * method.
 		 * 
 		 * @type {object<array>}
 		 */
@@ -21,18 +23,17 @@ var PhaserSat = (function (Phaser, SAT) {
 		},
 		
 		/**
-		 * Some values we can use throughout our game state.
+		 * Some feature values we can use throughout our game state.
 		 * 
 		 * @type {object}
 		 */
 		features: {
 			debug: 0,
 			speed: 1000,
-			bounce: 0.2,
+			bounce: 0,
 			gravity: 500,
 			friction: 0,
-			slowMotion: 1,
-			stopSliding: false
+			slowMotion: 1
 		},
 		
 		/**
@@ -87,7 +88,6 @@ var PhaserSat = (function (Phaser, SAT) {
 			
 			// Limit the effects of gravity and acceleration
 			this.player.body.drag.x = this.features.speed;
-			this.player.body.drag.y = this.features.speed;
 			this.player.body.maxVelocity.x = this.features.speed;
 			this.player.body.maxVelocity.y = this.features.speed;
 			
@@ -122,13 +122,15 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Let's create a wide box to act as a floor
 			this.polygons.push(new Box(new V(0, 550), 800, 50).toPolygon());
 			
-			// A bottom left triangle
-			this.polygons.push(new P(new V(200, 296), [
-				new V(0, 0), new V(32, 32), new V(0, 32)
-			]));
+			// A few bottom left triangles
+			for (var i = 0; i < 5; i++) {
+				this.polygons.push(new P(new V(200 - 32 * i, 296 - 32 * i), [
+					new V(0, 0), new V(32, 32), new V(0, 32)
+				]));
+			}
 			
-			// A few bottom right triangles
-			for (var i = 0; i < 3; i++) {
+			// And a few bottom right triangles
+			for (i = 0; i < 5; i++) {
 				this.polygons.push(new P(new V(300 + 32 * i, 296 - 32 * i), [
 					new V(32, 0), new V(32, 32), new V(0, 32)
 				]));
@@ -139,8 +141,13 @@ var PhaserSat = (function (Phaser, SAT) {
 				new V(46, 0), new V(0, 25), new V(64, 32)
 			]));
 			
+			// A bigger less ordinary triangle
+			this.polygons.push(new P(new V(260, 440), [
+				new V(0, 0), new V(40, 40), new V(-30, 60)
+			]));
+			
 			// Parallelogram
-			this.polygons.push(new P(new V(400, 400), [
+			this.polygons.push(new P(new V(350, 400), [
 				new V(30,70), new V(60,70), new V(45,100), new V(15,100)
 			]));
 			
@@ -211,8 +218,8 @@ var PhaserSat = (function (Phaser, SAT) {
 					body.position.y += overlapV.y;
 					
 					// Let's update the SAT polygon too for any further polygons
-					body.sat.polygon.pos.x += overlapV.x;
-					body.sat.polygon.pos.y += overlapV.y;
+					body.sat.polygon.pos.x = body.position.x;
+					body.sat.polygon.pos.y = body.position.y;
 					
 					/**
 					 * And now, let's experiment with - goodness me - velocity!
@@ -234,7 +241,7 @@ var PhaserSat = (function (Phaser, SAT) {
 					var bounce = velocityN.clone().scale(-this.features.bounce);
 					
 					// And scale a friction coefficient to the surface velocity
-					var friction = velocityT.clone().scale(1 - this.features.friction);
+					var friction = velocityT.clone().scale(1.01 - this.features.friction);
 					
 					// And finally add them together for our new velocity!
 					var newVelocity = friction.clone().add(bounce);
@@ -280,19 +287,21 @@ var PhaserSat = (function (Phaser, SAT) {
 			 * to our player by using acceleration.
 			 */
 			
-			 // Toggle gravity (and player drag on the Y axis) when we've just
- 			// pressed down the G key
- 			if (controls.gravity.justDown) {
- 				if (!gravity.y) {
-					// We don't want any drag on the Y axis when gravity is on
- 					gravity.y = this.features.gravity;
- 					body.drag.y = 0;
- 				} else {
-					// But we do want it when gravity is off!
- 					gravity.y = 0;
- 					body.drag.y = this.features.speed;
- 				}
- 			}
+			 // Let's apply some feature values
+ 			gravity.y = this.features.gravity;
+			body.drag.x = this.features.speed;
+			body.bounce.setTo(this.features.bounce);
+			body.maxVelocity.x = this.features.speed;
+			body.maxVelocity.y = this.features.speed;
+			this.time.slowMotion = this.features.slowMotion;
+			
+			if (!gravity.y) {
+				// We want drag on the Y axis when gravity is on
+				body.drag.y = this.features.speed;
+			} else {
+				// But we don't want it when gravity is off!
+				body.drag.y = 0;
+			}
 			
 			// Reset the player body's acceleration
 			if (!(controls.left.isDown || controls.right.isDown)) {
@@ -338,29 +347,38 @@ var PhaserSat = (function (Phaser, SAT) {
 			this.game.debug.start(32, 400, '#777');
 			this.game.debug.columnWidth = 100;
 			
+			// Initialise some variables to use in some loops because my new
+			// linter lints really hard
+			var i, item, name, line, colour;
+			
 			// Render information about our vectors
-			for (var i in this.debug.vectors) {
-				var item = this.debug.vectors[i];
-				var name = item.hasOwnProperty('name') ? item.name : 'Vector ' + i;
+			for (i in this.debug.vectors) {
+				item = this.debug.vectors[i];
+				name = item.hasOwnProperty('name') ? item.name : 'Vector ' + i;
 				
 				this.game.debug.line(name, ' x: ' + item.x.toFixed(4), ' y: ' + item.y.toFixed(4));
 			}
 			
 			this.game.debug.stop();
 			
+			// Render some of the vectors themselves from the center of the
+			// game world (technically the center of the screen relative to
+			// their game world coordinates but whatever)
 			if (this.features.debug > 1) {
 				for (i in this.debug.normals) {
-					var item = this.debug.normals[i];
+					item = this.debug.normals[i];
 					
-					// Draw the normal from the center of the world
-					var line = new Phaser.Line(
+					// Draw the vector (why did I call this normals? because
+					// vectors is already taken)
+					line = new Phaser.Line(
 						this.world.width / 2,
 						this.world.height / 2,
 						this.world.width / 2 + item.x,
 						this.world.height / 2 + item.y
 					);
 					
-					var colour = item.hasOwnProperty('colour') ? item.colour : 'rgba(255,128,255,0.8)';
+					// Select a colour from the vector or fall back to pink
+					colour = item.hasOwnProperty('colour') ? item.colour : 'rgba(255,128,255,0.8)';
 					
 					this.game.debug.geom(line, colour);
 				}
@@ -373,12 +391,15 @@ var PhaserSat = (function (Phaser, SAT) {
 	};
 	
 	/**
+	 * Keep a reference to the original renderBodyInfo() method before
+	 * overriding it.
+	 * 
 	 * @type {function}
 	 */
 	Phaser.Physics.Arcade.Body.originalRenderBodyInfo = Phaser.Physics.Arcade.Body.renderBodyInfo;
 	
 	/**
-	 * Adding a another line to Arcade Body's static renderBodyInfo() method,
+	 * Adds a another line to Arcade Body's static renderBodyInfo() method,
 	 * just so we can see a little more (i.e. drag).
 	 *
 	 * @static

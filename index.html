@@ -3,8 +3,20 @@
 	<head>
 		<title>Phaser SAT Experiment</title>
 		<style>
-			.control {
+			body {
+				font-family: sans-serif;
+			}
+			
+			label {
 				display: inline-block;
+			}
+			
+			label input {
+				display: block;
+			}
+			
+			.controls {
+				margin-top: 8px;
 			}
 		</style>
 		<script src="vendor/phaser/build/phaser.js"></script>
@@ -14,12 +26,69 @@
 			var PhaserGlobal = {hideBanner: true};
 			var state = new PhaserSat;
 			var game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser', state);
+			
+			// This hooks up our ugly controls to the game state object.
+			// Thanks to http://youmightnotneedjquery.com for helping me to
+			// break an unhealthy dependency and keeping me sane here.
+			var $ = document.querySelectorAll.bind(document);
+			
+			/**
+			 * Update a feature value according to the value of the given
+			 * <input type="range"> control.
+			 * 
+			 * @param {Element} control
+			 */
+			var updateValue = function(control) {
+				var feature = control.getAttribute('data-feature');
+				var value = parseFloat(control.value);
+				
+				state.features[feature] = value;
+				$('.' + feature)[0].innerText = value;
+			}
+			
+			document.addEventListener('DOMContentLoaded', function () {
+				// Update the game state's values with control values
+				Array.prototype.forEach.call($('.control'), function (control) {
+					// To begin with
+					updateValue(control);
+					
+					// And when they change
+					control.addEventListener('input', function (event) {
+						updateValue(event.target);
+					})
+				});
+			});
 		</script>
 	</head>
 	<body>
 		<div id="phaser">
 			
 		</div>
-		<!--<input type="range" class="control bounce"> <input type="range" class="control friction"> <input type="range" class="control slowMotion">-->
+		<div class="controls">
+			<label>
+				Speed: <span class="speed"></span>
+				<input type="range" class="control" data-feature="speed" value="1000" min="100" max="5000"/>
+			</label>
+			<label>
+				Gravity: <span class="gravity"></span>
+				<input type="range" class="control" data-feature="gravity" value="500" min="0" max="2000" step="50"/>
+			</label>
+			<label>
+				Bounce: <span class="bounce"></span>
+				<input type="range" class="control" data-feature="bounce" value="0.2" min="0" max="1" step="0.05"/>
+			</label>
+			<label>
+				Friction: <span class="friction"></span>
+				<input type="range" class="control" data-feature="friction" value="0" min="0" max="1" step="0.05"/>
+			</label>
+			<label>
+				Slow motion: <span class="slowMotion"></span>
+				<input type="range" class="control" data-feature="slowMotion" value="0" min="1" max="16"/>
+			</label>
+			<label>
+				Debug: <span class="debug"></span>
+				<input type="range" class="control" data-feature="debug" value="0" min="0" max="2"/>
+			</label>
+		</div>
 	</body>
 </html>
