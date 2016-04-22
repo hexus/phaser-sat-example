@@ -78,7 +78,7 @@ var PhaserSat = (function (Phaser, SAT) {
 			var playerGraphicsTexture = playerGraphics.generateTexture();
 			
 			// Add a new sprite to the game world, using the graphics above
-			this.player = this.add.sprite(200, 200, playerGraphicsTexture);
+			this.player = this.add.sprite(60, 72, playerGraphicsTexture);
 			
 			// Give it an Arcade physics body that we can use
 			this.physics.arcade.enable(this.player);
