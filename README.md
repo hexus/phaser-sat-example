@@ -17,8 +17,9 @@ by [Metanet](http://www.metanetsoftware.com/).
 Even though Phaser has its Ninja Physics engine, which is ported from the very
 examples linked above, I wanted to see if it could be done more concisely.
 
-I was able to achieve this thanks to the fantastic
-[SAT.js](https://github.com/jriecken/sat-js) library.
+In the end was able to achieve this thanks to the awesome
+[SAT.js](https://github.com/jriecken/sat-js) library and this
+[very handy tutorial](http://elancev.name/oliver/2D%20polygon.htm#tut4).
 
 ## Installation
 
