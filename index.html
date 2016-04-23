@@ -27,12 +27,12 @@
 			var PhaserGlobal = {hideBanner: true};
 			var state = new PhaserSat;
 			var game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser', state);
-			
+
 			// This hooks up our ugly controls to the game state object.
 			// Thanks to http://youmightnotneedjquery.com for helping me to
 			// break an unhealthy dependency and keeping me sane here.
 			var $ = document.querySelectorAll.bind(document);
-			
+
 			/**
 			 * Update a feature value according to the value of the given
 			 * <input type="range"> control.
@@ -46,7 +46,7 @@
 				state.features[feature] = value;
 				$('.' + feature)[0].innerText = value;
 			}
-			
+
 			document.addEventListener('DOMContentLoaded', function () {
 				// Update the game state's values with control values
 				Array.prototype.forEach.call($('.control'), function (control) {
@@ -91,5 +91,8 @@
 				<input type="range" class="control" data-feature="debug" value="0" min="0" max="2"/>
 			</label>
 		</div>
+		<p>
+			<strong>WASD</strong> to move.
+		</p>
 	</body>
 </html>

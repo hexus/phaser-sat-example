@@ -141,13 +141,13 @@ var PhaserSat = (function (Phaser, SAT) {
 			]));
 			
 			// A bigger less ordinary triangle
-			this.polygons.push(new P(new V(260, 440), [
+			this.polygons.push(new P(new V(240, 420), [
 				new V(0, 0), new V(40, 40), new V(-30, 60)
 			]));
 			
 			// Parallelogram
-			this.polygons.push(new P(new V(350, 400), [
-				new V(30,70), new V(60,70), new V(45,100), new V(15,100)
+			this.polygons.push(new P(new V(320, 400), [
+				new V(50,50), new V(100,50), new V(50,100), new V(0,100)
 			]));
 			
 			// A big hexagon!
