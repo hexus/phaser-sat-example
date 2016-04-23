@@ -86,8 +86,7 @@ var PhaserSat = (function (Phaser, SAT) {
 			// Make sure the player can't leave the bounds of the game world
 			this.player.body.collideWorldBounds = true;
 			
-			// Limit the effects of gravity and acceleration
-			this.player.body.drag.x = this.features.speed;
+			// Limit the player's maximum velocity
 			this.player.body.maxVelocity.x = this.features.speed;
 			this.player.body.maxVelocity.y = this.features.speed;
 			
@@ -237,11 +236,12 @@ var PhaserSat = (function (Phaser, SAT) {
 					// Then work out the surface velocity
 					var velocityT = velocity.clone().sub(velocityN);
 					
-					// Scale our normal velocity with a bounce coefficient (ziggity biggity hi! https://youtu.be/ViPQ-RIPmKk)
+					// Scale our normal velocity with a bounce coefficient
+					// Ziggity biggity hi! https://youtu.be/Yc8bzl6dqQI
 					var bounce = velocityN.clone().scale(-this.features.bounce);
 					
 					// And scale a friction coefficient to the surface velocity
-					var friction = velocityT.clone().scale(1.01 - this.features.friction);
+					var friction = velocityT.clone().scale(1 - this.features.friction);
 					
 					// And finally add them together for our new velocity!
 					var newVelocity = friction.clone().add(bounce);
@@ -250,7 +250,9 @@ var PhaserSat = (function (Phaser, SAT) {
 					body.velocity.x = newVelocity.x;
 					body.velocity.y = newVelocity.y;
 					
-					// If debugging is enabled, let's print some information
+					// If debugging is enabled, let's store some of our vectors.
+					// This is why we've declared so many variables above.
+					// Otherwise, we wouldn't need to.
 					if (this.features.debug) {
 						velocity.name    = 'velocity';
 						overlapV.name    = 'overlapV';
@@ -274,6 +276,9 @@ var PhaserSat = (function (Phaser, SAT) {
 							friction.colour = '#f55';
 							newVelocity.colour = '#5f5';
 							
+							// 
+							overlapN.scale(50);
+							
 							this.debug.normals.push(
 								overlapN, bounce, friction, newVelocity
 							);
@@ -289,19 +294,10 @@ var PhaserSat = (function (Phaser, SAT) {
 			
 			 // Let's apply some feature values
  			gravity.y = this.features.gravity;
-			body.drag.x = this.features.speed;
 			body.bounce.setTo(this.features.bounce);
 			body.maxVelocity.x = this.features.speed;
 			body.maxVelocity.y = this.features.speed;
 			this.time.slowMotion = this.features.slowMotion;
-			
-			if (!gravity.y) {
-				// We want drag on the Y axis when gravity is on
-				body.drag.y = this.features.speed;
-			} else {
-				// But we don't want it when gravity is off!
-				body.drag.y = 0;
-			}
 			
 			// Reset the player body's acceleration
 			if (!(controls.left.isDown || controls.right.isDown)) {
@@ -390,27 +386,5 @@ var PhaserSat = (function (Phaser, SAT) {
 		}
 	};
 	
-	/**
-	 * Keep a reference to the original renderBodyInfo() method before
-	 * overriding it.
-	 * 
-	 * @type {function}
-	 */
-	Phaser.Physics.Arcade.Body.originalRenderBodyInfo = Phaser.Physics.Arcade.Body.renderBodyInfo;
-	
-	/**
-	 * Adds a another line to Arcade Body's static renderBodyInfo() method,
-	 * just so we can see a little more (i.e. drag).
-	 *
-	 * @static
-	 * @method Phaser.Physics.Arcade.Body.renderBodyInfo
-	 * @param  {Phaser.Debug}               debug
-	 * @param  {Phaser.Physics.Arcade.Body} body
-	 */
-	Phaser.Physics.Arcade.Body.renderBodyInfo = function (debug, body) {
-		Phaser.Physics.Arcade.Body.originalRenderBodyInfo.apply(this, arguments);
-		debug.line('drag x: ' + body.drag.x, 'y: ' + body.drag.y);
-	};
-	
 	return PhaserSat;
-})(Phaser, SAT);
+})(Phaser || {}, SAT || {});
