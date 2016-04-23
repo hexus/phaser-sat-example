@@ -20,7 +20,7 @@
 		"tests"
 	],
 	"dependencies": {
-		"phaser": "photonstorm/phaser#dev",
+		"phaser": "photonstorm/phaser#2.4.7",
 		"sat-js": "jriecken/sat-js#0.5.0"
 	}
 }

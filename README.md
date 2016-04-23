@@ -14,15 +14,15 @@ something like [this](http://www.metanetsoftware.com/technique/diagrams/tutA_dem
 from a [fantastic tutorial](http://www.metanetsoftware.com/technique/tutorialA.html)
 by [Metanet](http://www.metanetsoftware.com/).
 
-Even though Phaser has its Ninja Physics engine, ported from the very examples
-linked above, I wanted to see if it could be done any better; more concisely.
+Even though Phaser has its Ninja Physics engine, which is ported from the very
+examples linked above, I wanted to see if it could be done more concisely.
 
-Thanks to the fantastic little [SAT.js](https://github.com/jriecken/sat-js)
-library, I was totally able to achieve this.
+I was able to achieve this thanks to the fantastic
+[SAT.js](https://github.com/jriecken/sat-js) library.
 
 ## Installation
 
-Install NPM, install bower, and then install the bower dependencies.
+Install NPM, install Bower, and then install the Bower dependencies.
 
 ```bash
 npm install -g bower
@@ -31,9 +31,6 @@ bower install
 
 Open up `index.html` in your browser!
 
-Be warned, the Phaser dependency is bleeding edge (dev branch). Change the
-version and run `bower install` again if you want something stable.
-
 ## Controls
 
-**WASD** to move around, **G** to toggle gravity.
+**WASD** to move.
