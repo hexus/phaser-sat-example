@@ -3,6 +3,8 @@
 An example of using the Separating Axis Theorem for collision handling with
 [Phaser](https://github.com/photonstorm/phaser).
 
+Check it out for yourself [here](http://hexus.github.io/phaser-sat-example/)!
+
 **PhaserSat.js** is a heavily commented Phaser scene that puts all of this
 together.
 
