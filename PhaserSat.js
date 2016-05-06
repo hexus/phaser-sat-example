@@ -237,7 +237,7 @@ var PhaserSat = (function (Phaser, SAT) {
 					var velocityT = velocity.clone().sub(velocityN);
 					
 					// Scale our normal velocity with a bounce coefficient
-					// Ziggity biggity hi! https://youtu.be/Yc8bzl6dqQI
+					// Ziggity, biggity, hi! https://youtu.be/Yc8bzl6dqQI
 					var bounce = velocityN.clone().scale(-this.features.bounce);
 					
 					// And scale a friction coefficient to the surface velocity

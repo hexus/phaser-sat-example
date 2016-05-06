@@ -1,6 +1,6 @@
 # Phaser SAT Example
 
-An example of using Separating Axis Theorem collision handling with
+An example of using the Separating Axis Theorem for collision handling with
 [Phaser](https://github.com/photonstorm/phaser).
 
 **PhaserSat.js** is a heavily commented Phaser scene that puts all of this
